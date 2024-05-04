@@ -25,8 +25,7 @@
     </message>
     <message>
         <location filename="../../src/ui/mainwindow.ui" line="424"/>
-        <location filename="../../src/MainWindow.cpp" line="168"/>
-        <location filename="../../src/MainWindow.cpp" line="232"/>
+        <location filename="../../src/MainWindow.cpp" line="151"/>
         <source>Run</source>
         <translation>Запуск</translation>
     </message>
@@ -36,22 +35,22 @@
         <translation>Доступные камеры</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="605"/>
+        <location filename="../../src/ui/mainwindow.ui" line="608"/>
         <source>System information</source>
         <translation>Системная информация</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="715"/>
+        <location filename="../../src/ui/mainwindow.ui" line="718"/>
         <source>GPU:</source>
         <translation>ГП:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="697"/>
+        <location filename="../../src/ui/mainwindow.ui" line="700"/>
         <source>CPU:</source>
         <translation>ЦП:</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="649"/>
+        <location filename="../../src/ui/mainwindow.ui" line="652"/>
         <source>Operating System:</source>
         <translation>Операционная система:</translation>
     </message>
@@ -71,29 +70,28 @@
         <translation>Очистить логгер</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="560"/>
+        <location filename="../../src/ui/mainwindow.ui" line="563"/>
         <source>Logs will appear here...</source>
         <translation>Логи появятся здесь...</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="834"/>
+        <location filename="../../src/ui/mainwindow.ui" line="837"/>
         <source>Interface language</source>
         <translation>Язык интерфейса</translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="849"/>
+        <location filename="../../src/ui/mainwindow.ui" line="852"/>
         <source>Русский</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/ui/mainwindow.ui" line="854"/>
+        <location filename="../../src/ui/mainwindow.ui" line="857"/>
         <source>English</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="107"/>
         <source>Error when initialising the recogniser</source>
-        <translation>Ошибка при инициализации распознавателя</translation>
+        <translation type="vanished">Ошибка при инициализации распознавателя</translation>
     </message>
     <message>
         <source>Error when initialising the warning sound</source>
@@ -104,83 +102,88 @@
         <translation type="vanished">Не найден файл предупредительного звукового сигнала по адресу &quot;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="155"/>
+        <location filename="../../src/MainWindow.cpp" line="138"/>
         <source>The camera &quot;</source>
         <translation>Камера &quot;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="155"/>
+        <location filename="../../src/MainWindow.cpp" line="138"/>
         <source>&quot; is selected</source>
         <translation>&quot; выбрана</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="163"/>
+        <location filename="../../src/MainWindow.cpp" line="146"/>
         <source>No available cameras</source>
         <translation>Нет доступных камер</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="128"/>
-        <location filename="../../src/MainWindow.cpp" line="168"/>
+        <location filename="../../src/MainWindow.cpp" line="109"/>
+        <location filename="../../src/MainWindow.cpp" line="151"/>
         <source>Stop</source>
         <translation>Стоп</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="196"/>
+        <location filename="../../src/MainWindow.cpp" line="177"/>
         <source>There is a problem with the camera </source>
         <translation>Возникла проблема с камерой </translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="200"/>
+        <location filename="../../src/MainWindow.cpp" line="181"/>
         <source>Camera failure</source>
         <translation>Сбой камеры</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="307"/>
+        <location filename="../../src/MainWindow.cpp" line="350"/>
         <source>The camera is running</source>
         <translation>Камера запущена</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="315"/>
+        <location filename="../../src/MainWindow.cpp" line="358"/>
         <source>The camera is stopped</source>
         <translation>Камера остановлена</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="404"/>
+        <location filename="../../src/MainWindow.cpp" line="200"/>
         <source>The Fist gesture is recognized</source>
         <translation>Распознан жест &quot;Кулак&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="406"/>
+        <location filename="../../src/MainWindow.cpp" line="201"/>
         <source>Restart the recognition system</source>
         <translation>Перезапуск системы распознавания</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="413"/>
+        <location filename="../../src/MainWindow.cpp" line="215"/>
+        <source>Error when initializing the recogniser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../src/MainWindow.cpp" line="455"/>
         <source>The Palm gesture is recognized</source>
         <translation>Распознан жест &quot;Ладонь&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="415"/>
+        <location filename="../../src/MainWindow.cpp" line="456"/>
         <source>Waking up the drowsiness recognition system</source>
         <translation>Ввод системы распознавания сонливости в режим оповещения</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="422"/>
+        <location filename="../../src/MainWindow.cpp" line="463"/>
         <source>The V gesture is recognized</source>
         <translation>Распознан &quot;V-жест&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="424"/>
+        <location filename="../../src/MainWindow.cpp" line="464"/>
         <source>Putting the drowsiness recognition system into sleep mode</source>
         <translation>Ввод системы распознавания сонливости в спящий режим</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="431"/>
+        <location filename="../../src/MainWindow.cpp" line="471"/>
         <source>Drowsiness is recognized</source>
         <translation>Распознана сонливость</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="433"/>
+        <location filename="../../src/MainWindow.cpp" line="472"/>
         <source>Drowsiness alert with a warning sound</source>
         <translation>Оповещение о сонливости при помощи предупредительного звукового сигнала</translation>
     </message>
@@ -196,27 +199,27 @@
         <translation type="vanished">Стоп</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="43"/>
+        <location filename="../../src/MainWindow.cpp" line="51"/>
         <source>Attentive Eye</source>
         <translation>Внимательный глаз</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="44"/>
+        <location filename="../../src/MainWindow.cpp" line="52"/>
         <source>Drowsy Eye</source>
         <translation>Соннный глаз</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="45"/>
+        <location filename="../../src/MainWindow.cpp" line="53"/>
         <source>Fist Gesture</source>
         <translation>Жест &quot;Кулак&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="46"/>
+        <location filename="../../src/MainWindow.cpp" line="54"/>
         <source>Palm Gesture</source>
         <translation>Жест &quot;Ладонь&quot;</translation>
     </message>
     <message>
-        <location filename="../../src/MainWindow.cpp" line="47"/>
+        <location filename="../../src/MainWindow.cpp" line="55"/>
         <source>V Gesture</source>
         <translation>&quot;V-жест&quot;</translation>
     </message>

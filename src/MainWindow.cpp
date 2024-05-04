@@ -1,7 +1,7 @@
 // +-----------------------------------------+
 // |              License: MIT               |
 // +-----------------------------------------+
-// | Copyright (c) 2023                      |
+// | Copyright (c) 2024                      |
 // | Author: Gleb Trufanov (aka Glebchansky) |
 // +-----------------------------------------+
 
@@ -15,6 +15,7 @@
 #include <QSoundEffect>
 #include <QProcess>
 #include <QMessageBox>
+#include <QAudioDevice>
 #include <QCameraDevice>
 #include <QTimer>
 #include <set>
@@ -22,9 +23,7 @@
 using namespace std;
 using namespace cv;
 
-namespace {
-
-constexpr int CAMERA_CONTENT_HINT_LABEL_PAGE  = 0;
+constexpr int CAMERA_CONTENT_HINT_LABEL_PAGE = 0;
 constexpr int VIDEO_FRAME_PAGE = 1;
 constexpr int RESTART_RECOGNITION_SYSTEM_PAGE = 2;
 
@@ -36,6 +35,16 @@ constexpr QColor PALE_YELLOW = {255, 219, 139};
 constexpr QColor CRAIOLA_PERIWINKLE = {197, 208, 230};
 constexpr QColor DEEP_CARMINE_PINK = {239, 48, 56};
 constexpr QColor WISTERIA = {201, 160, 20};
+
+#ifdef Q_OS_WIN64
+constexpr QLatin1StringView NEURAL_NETWORK_MODEL_PATH{"/resource/neural_network_model/neural_network_model.onnx"};
+constexpr QLatin1StringView WARNING_SOUND_PATH{"/resource/sound/warning_sound.wav"};
+constexpr QLatin1StringView TRANSLATION_PATH{"/resource/translation/ISS-Driver-Drowsiness-Detector_ru_RU.qm"};
+#else
+constexpr QLatin1StringView NEURAL_NETWORK_MODEL_PATH{"/../resource/neural_network_model/neural_network_model.onnx"};
+constexpr QLatin1StringView WARNING_SOUND_PATH{"/../resource/sound/warning_sound.wav"};
+constexpr QLatin1StringView TRANSLATION_PATH{"/../resource/translation/ISS-Driver-Drowsiness-Detector_ru_RU.qm"};
+#endif
 
 string ToClassName(RecognitionType recognitionType) {
     switch (recognitionType) {
@@ -62,7 +71,7 @@ Scalar ToRecognitionColor(RecognitionType recognitionType) {
 
 void DrawLabel(Mat& image, const string& text, int left, int top, const Scalar& lineRectangleColor) {
     int baseLine;
-    Size labelSize = getTextSize(text, FONT_HERSHEY_COMPLEX, 0.5, 1, &baseLine);
+    const auto labelSize = getTextSize(text, FONT_HERSHEY_COMPLEX, 0.5, 1, &baseLine);
     top = max(top, labelSize.height);
 
     Point cornerLineTopRight(left + 15, top - 20);
@@ -80,29 +89,9 @@ void DrawLabel(Mat& image, const string& text, int left, int top, const Scalar& 
     putText(image, text, cornerLineTopRight, FONT_HERSHEY_COMPLEX, 0.5, Scalar(255, 255, 255), 1, LINE_AA); // BGR format
 }
 
-} // namespace
-
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow),
-    _imageRecognizer(QDir::currentPath().append("/resource/neural_network_model/neural_network_model.onnx").toStdString())
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), _ui(new Ui::MainWindow),
+    _imageRecognizer(QCoreApplication::applicationDirPath().append(NEURAL_NETWORK_MODEL_PATH).toStdString())
 {
-    auto warningSoundPath = QDir::currentPath().append("/resource/sound/warning_sound.wav");
-
-    if (!QFileInfo::exists(warningSoundPath)) {
-        QMessageBox::critical(nullptr, "Error when initialising the warning sound",
-                              QString("No warning sound file found at \"").append(warningSoundPath).append("\""));
-        _hasErrors = true;
-        return;
-    }
-
-    if (!_imageRecognizer.Error().empty()) {
-        QMessageBox::critical(nullptr, tr("Error when initialising the recogniser"), tr(_imageRecognizer.Error().c_str()));
-        _hasErrors = true;
-        return;
-    }
-
-    _warningSound.setSource(QUrl::fromLocalFile(warningSoundPath));
-
-    ui->setupUi(this);
     Init();
 }
 
@@ -112,19 +101,19 @@ bool MainWindow::Errors() const {
 
 void MainWindow::changeEvent(QEvent* event) {
     if (event->type() == QEvent::LanguageChange) {
-        ui->retranslateUi(this);
+        _ui->retranslateUi(this);
 
-        // Explicitly setting text is needed because calling "ui->retranslateUi(this)" resets the text to the one
+        // Explicitly setting text is needed because calling "_ui->retranslateUi(this)" resets the text to the one
         // originally set for the button in the GUI (Qt Designer). This is because retranslate only calls
         // QCoreApplication::translate for the GUI caption (in this case the "Run" caption)
-        if (_isCameraRun) ui->runStop->setText(tr("Stop"));
+        if (_isCameraRun) _ui->runStop->setText(tr("Stop"));
     }
 
-    QWidget::changeEvent(event);
+    QMainWindow::changeEvent(event);
 }
 
 void MainWindow::OnAvailableCamerasActivated(int index) {
-    auto selectedCameraName = ui->availableCameras->itemText(index);
+    auto selectedCameraName = _ui->availableCameras->itemText(index);
 
     if (selectedCameraName == _currentCameraName) // To avoid re-setting the same camera device
         return;
@@ -139,14 +128,14 @@ void MainWindow::OnAvailableCamerasActivated(int index) {
         isNeedToResumeVideoStream = true;
     }
 
-    ui->videoFrame->clear();
+    _ui->videoFrame->clear();
     _currentCameraName = std::move(selectedCameraName);
     _camera.SetCameraDevice(index);
 
     const auto newCameraResolution = _camera.GetResolution();
-    ui->cameraContentStackedWidget->setFixedSize(newCameraResolution.width, newCameraResolution.height);
+    _ui->cameraContentStackedWidget->setFixedSize(newCameraResolution.width, newCameraResolution.height);
 
-    TextBrowserLogger::Log(ui->logger, tr("The camera \"").append(_currentCameraName).append(tr("\" is selected")), CRAIOLA_PERIWINKLE);
+    TextBrowserLogger::Log(_ui->logger, tr("The camera \"").append(_currentCameraName).append(tr("\" is selected")), CRAIOLA_PERIWINKLE);
 
     if (isNeedToResumeVideoStream)
         ResumeVideoStreamThread();
@@ -159,26 +148,26 @@ void MainWindow::OnRunStopClicked() {
     }
 
     _isCameraRun = !_isCameraRun;
-    ui->runStop->setText(_isCameraRun ? tr("Stop") : tr("Run"));
+    _ui->runStop->setText(_isCameraRun ? tr("Stop") : tr("Run"));
 
     _isCameraRun ? StartCamera() : StopCamera();
 }
 
 void MainWindow::OnClearLoggerClicked() {
-    TextBrowserLogger::Clear(ui->logger);
+    TextBrowserLogger::Clear(_ui->logger);
 }
 
 void MainWindow::OnVideoInputsChanged() {
-    const QList<QCameraDevice> cameras = _mediaDevices.videoInputs();
+    const QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
     QList<QString> existingCameras; // There may be a situation where there are cameras with the same names (descriptions)
 
-    ui->availableCameras->clear();
+    _ui->availableCameras->clear();
 
     for (const auto& camera : cameras) {
         const auto camerasCount = existingCameras.count(camera.description());
         const QString cameraName = camera.description().append(camerasCount > 0 ? QString::number(camerasCount) : "");
 
-        ui->availableCameras->addItem(cameraName);
+        _ui->availableCameras->addItem(cameraName);
         existingCameras.emplace_back(camera.description());
     }
 
@@ -188,7 +177,7 @@ void MainWindow::OnVideoInputsChanged() {
         const auto errorMessage = tr("There is a problem with the camera ").append(_currentCameraName);
 
         OnRunStopClicked();
-        TextBrowserLogger::Log(ui->logger, errorMessage, DEEP_CARMINE_PINK);
+        TextBrowserLogger::Log(_ui->logger, errorMessage, DEEP_CARMINE_PINK);
         QMessageBox::warning(nullptr, tr("Camera failure"), errorMessage);
     }
 
@@ -198,58 +187,86 @@ void MainWindow::OnVideoInputsChanged() {
     else if (!_camera.IsAvailable() || !isCurrentCameraDeviceAvailable) {
         _camera.SetCameraDevice(0); // If there were no cameras available before or the current camera device has been deactivated
         const auto cameraResolution = _camera.GetResolution();
-        ui->cameraContentStackedWidget->setFixedSize(cameraResolution.width, cameraResolution.height);
+        _ui->cameraContentStackedWidget->setFixedSize(cameraResolution.width, cameraResolution.height);
         _currentCameraName = existingCameras[0];
-        ui->availableCameras->setCurrentIndex(0);
+        _ui->availableCameras->setCurrentIndex(0);
     }
     else {
-        ui->availableCameras->setCurrentText(_currentCameraName);
+        _ui->availableCameras->setCurrentText(_currentCameraName);
     }
 }
 
 void MainWindow::OnRecognitionSystemRestarted() {
-    ui->cameraContentStackedWidget->setCurrentIndex(RESTART_RECOGNITION_SYSTEM_PAGE);
-    ui->cameraContentStackedWidget->repaint();
+    TextBrowserLogger::Log(_ui->logger, tr("The Fist gesture is recognized"), WISTERIA);
+    TextBrowserLogger::Log(_ui->logger, tr("Restart the recognition system"), WISTERIA);
 
-    _frameCounterWithRecognition.Reset(FistGesture);
+    _ui->cameraContentStackedWidget->setCurrentIndex(RESTART_RECOGNITION_SYSTEM_PAGE);
+    _ui->cameraContentStackedWidget->repaint();
+
     DestroyVideoStreamThread();
     _imageRecognizer.Restart();
 
-    QThread::msleep(RESTART_SLEEP_TIME_MS); // A pause for a sense of duration in restarting the recognition system
+    QThread::msleep(RESTART_SLEEP_TIME_MS); // Pause to simulate the restart duration of the recognition system
     StartCamera();
 }
 
 void MainWindow::Init() {
+    if (!_imageRecognizer.Error().empty()) {
+        QMessageBox::critical(nullptr, tr("Error when initializing the recogniser"), tr(_imageRecognizer.Error().c_str()));
+        _hasErrors = true;
+        return;
+    }
+
+    const auto warningSoundPath = QCoreApplication::applicationDirPath().append(WARNING_SOUND_PATH);
+
+    if (!QFileInfo::exists(warningSoundPath)) {
+        QMessageBox::critical(nullptr, "Error when initializing the warning sound",
+                              QString("No warning sound file found at \"").append(warningSoundPath).append("\""));
+        _hasErrors = true;
+        return;
+    }
+
+    _warningSound.setAudioDevice(QMediaDevices::defaultAudioOutput());
+    _warningSound.setSource(QUrl::fromLocalFile(warningSoundPath));
+
+    _ui->setupUi(this);
+
     SetSystemInformation();
 
-    ui->russianLanguage->setIcon(QIcon(":/icons/images/Flag_of_Russia.svg"));
-    ui->englishLanguage->setIcon(QIcon(":/icons/images/Flag_of_the_United_Kingdom.svg"));
+    _ui->russianLanguage->setIcon(QIcon(":/icons/images/Flag_of_Russia.svg"));
+    _ui->englishLanguage->setIcon(QIcon(":/icons/images/Flag_of_the_United_Kingdom.svg"));
 
     OnVideoInputsChanged(); // For fill combobox on init
     InitConnects();
 
-    if (ui->availableCameras->count())
-        _currentCameraName = ui->availableCameras->itemText(0);
+    if (_ui->availableCameras->count())
+        _currentCameraName = _ui->availableCameras->itemText(0);
 
-    showMaximized();
-
-    const auto translationFilePath = QDir::currentPath().append("/resource/translation/ISS-Driver-Drowsiness-Detector_ru_RU.qm");
+    const auto translationFilePath = QCoreApplication::applicationDirPath().append(TRANSLATION_PATH);
     const auto translationFilePathErrorMessage = QString("Error when loading the translation file \"%1\". "
         "The Russian translation will not be available during the work of the application.").arg(translationFilePath);
 
     if (!_uiRussianTranslator.load(translationFilePath)) {
-        ui->russianLanguage->setDisabled(true);
+        _ui->russianLanguage->setDisabled(true);
         QMessageBox::warning(nullptr, "Error when loading the translation file", translationFilePathErrorMessage);
     }
+
+    // A workaround for the next very strange problem:
+    // Because the cameraContentStackedWidget is set to a fixed size in OnVideoInputsChanged, which is called above,
+    // this breaks QMainWindow's showMaximized and prevents the window from expanding fully (even the maximize window
+    // size button is removed). This is somehow fixed when the whole application is translated for the first time.
+    QApplication::installTranslator(&_uiRussianTranslator);
+    _ui->retranslateUi(this);
+    QApplication::removeTranslator(&_uiRussianTranslator);
 }
 
 void MainWindow::InitConnects() {
     // Connect for update available cameras if the list of cameras in the system has changed
     connect(&_mediaDevices, &QMediaDevices::videoInputsChanged, this, &MainWindow::OnVideoInputsChanged);
 
-    for (const auto* retranslateUiButton : {ui->russianLanguage, ui->englishLanguage}) {
+    for (const auto* retranslateUiButton : {_ui->russianLanguage, _ui->englishLanguage}) {
         connect(retranslateUiButton, &QAction::triggered, this, [&, retranslateUiButton]() {
-            if (retranslateUiButton == ui->russianLanguage) {
+            if (retranslateUiButton == _ui->russianLanguage) {
                 QApplication::installTranslator(&_uiRussianTranslator);
             }
             else {
@@ -258,40 +275,66 @@ void MainWindow::InitConnects() {
         });
     }
 
-    connect(ui->availableCameras, &QComboBox::activated, this, &MainWindow::OnAvailableCamerasActivated);
-    connect(ui->runStop, &QPushButton::clicked, this, &MainWindow::OnRunStopClicked);
-    connect(ui->clearLogger, &QPushButton::clicked, this, &MainWindow::OnClearLoggerClicked);
+    connect(_ui->availableCameras, &QComboBox::activated, this, &MainWindow::OnAvailableCamerasActivated);
+    connect(_ui->runStop, &QPushButton::clicked, this, &MainWindow::OnRunStopClicked);
+    connect(_ui->clearLogger, &QPushButton::clicked, this, &MainWindow::OnClearLoggerClicked);
+
+    // The connections below are used for safe interaction of the secondary thread with GUI elements via the main thread
+
     connect(this, &MainWindow::RecognitionSystemRestarted, this, &MainWindow::OnRecognitionSystemRestarted);
     connect(this, &MainWindow::PlayWarningSignal, this, [this]() { _warningSound.play(); });
+
+    connect(this, &MainWindow::LogAsync, this, [this](const QString& message, const QColor& color) {
+        TextBrowserLogger::Log(_ui->logger, message, color);
+    });
+
+    connect(this, &MainWindow::UpdateVideoFrame, this, [this](const QPixmap& videoFrame) {
+        _ui->videoFrame->setPixmap(videoFrame);
+    });
 }
 
 void MainWindow::SetSystemInformation() {
     QProcess systemProcess;
-    QString cpuName, gpuName;
+    QString cpuName = "Cannot be detected";
+    QString gpuName = "Cannot be detected"; // If there are multiple active GPUs (SLI), they will concatenate into a single text (at least on Linux :) )
 
 #ifdef Q_OS_WIN64
     systemProcess.startCommand("wmic cpu get name");
-    systemProcess.waitForFinished();
-    cpuName = systemProcess.readAllStandardOutput();
-    cpuName.remove(0, cpuName.indexOf('\n') + 1);
-    cpuName = cpuName.trimmed();
+
+    if (systemProcess.waitForFinished()) {
+        cpuName = systemProcess.readAllStandardOutput();
+        cpuName = cpuName.remove(0, cpuName.indexOf('\n') + 1).trimmed();
+    }
 
     systemProcess.startCommand("wmic PATH Win32_videocontroller get VideoProcessor");
-    systemProcess.waitForFinished();
-    gpuName = systemProcess.readAllStandardOutput();
-    gpuName.remove(0, gpuName.indexOf('\n') + 1);
-    gpuName = gpuName.trimmed();
-#endif
-#ifdef Q_OS_LINUX
-    systemProcess.start("\"cat /proc/cpuinfo | grep 'model name' | uniq\"");
-    systemProcess.waitForFinished();
-    cpuName = systemProcess.readAllStandardOutput();
-    // TODO System Information in Linux
+
+    if (systemProcess.waitForFinished()) {
+        gpuName = systemProcess.readAllStandardOutput();
+        gpuName = gpuName.remove(0, gpuName.indexOf('\n') + 1).trimmed();
+    }
+#else
+    static constexpr QUtf8StringView getCpuCommand{R"(lscpu | grep "Имя модели\|Model name" | awk -F ':' '{print $2}')"};
+
+    static constexpr QLatin1StringView getGpusCommand{
+    R"(
+        lspci -vnnn |
+        perl -lne 'print if /^\d+\:.+(\[\S+\:\S+\])/' |
+        grep VGA |
+        awk -F ':' '{print $3,":",$4}' |
+        cut -d '(' -f 1 |
+        awk '{gsub("[[:blank:]]+:[[:blank:]]+", ":"); print}'
+    )"};
+
+    systemProcess.start("sh", QStringList() << "-c" << getCpuCommand.toString());
+    if (systemProcess.waitForFinished()) cpuName = systemProcess.readAllStandardOutput().trimmed();
+
+    systemProcess.start("sh", QStringList() << "-c" << getGpusCommand);
+    if (systemProcess.waitForFinished()) gpuName = systemProcess.readAllStandardOutput().trimmed();
 #endif
 
-    ui->operatingSystem->setText(QSysInfo::prettyProductName());
-    ui->cpuName->setText(cpuName);
-    ui->gpuName->setText(gpuName);
+    _ui->operatingSystem->setText(QSysInfo::prettyProductName());
+    _ui->cpuName->setText(cpuName);
+    _ui->gpuName->setText(gpuName);
 }
 
 void MainWindow::StartCamera() {
@@ -304,20 +347,20 @@ void MainWindow::StartCamera() {
         ResumeVideoStreamThread();
     }
 
-    TextBrowserLogger::Log(ui->logger, tr("The camera is running"), PALE_YELLOW);
-    ui->cameraContentStackedWidget->setCurrentIndex(VIDEO_FRAME_PAGE);
+    TextBrowserLogger::Log(_ui->logger, tr("The camera is running"), PALE_YELLOW);
+    _ui->cameraContentStackedWidget->setCurrentIndex(VIDEO_FRAME_PAGE);
 }
 
 void MainWindow::StopCamera() {
-    ui->videoFrame->clear();
-    ui->cameraContentStackedWidget->setCurrentIndex(CAMERA_CONTENT_HINT_LABEL_PAGE);
+    _ui->videoFrame->clear();
+    _ui->cameraContentStackedWidget->setCurrentIndex(CAMERA_CONTENT_HINT_LABEL_PAGE);
     SuspendVideoStreamThread(50);
-    TextBrowserLogger::Log(ui->logger, tr("The camera is stopped"), PALE_YELLOW);
+    TextBrowserLogger::Log(_ui->logger, tr("The camera is stopped"), PALE_YELLOW);
 }
 
 void MainWindow::VideoStream() {
     while (_isVideoStreamThreadRun) {
-         QMutexLocker locker(&_mutex);
+        QMutexLocker locker(&_mutex);
 
         while (!_isCameraRun)
             _videoStreamStopper.wait(&_mutex);
@@ -332,7 +375,7 @@ void MainWindow::VideoStream() {
             const auto recognitions = _imageRecognizer.Recognize(flippedVideoFrame);
             HandleRecognitions(recognitions, flippedVideoFrame);
 
-            ui->videoFrame->setPixmap(QPixmap::fromImage(ToQImage(flippedVideoFrame)));
+            emit UpdateVideoFrame(QPixmap::fromImage(ToQImage(flippedVideoFrame)));
         }
 
         // When repeatedly stopping and starting the camera using the GUI without this explicit unlock call, the thread may stall
@@ -341,7 +384,7 @@ void MainWindow::VideoStream() {
     }
 }
 
-void MainWindow::HandleRecognitions(const std::vector<RecognitionInfo>& recognitions, cv::Mat& videoFrame) {
+void MainWindow::HandleRecognitions(const vector<RecognitionInfo>& recognitions, cv::Mat& videoFrame) {
     static char confidenceBuffer[10];
     int16_t drowsyEyeCount = 0;
 
@@ -354,8 +397,9 @@ void MainWindow::HandleRecognitions(const std::vector<RecognitionInfo>& recognit
     };
 
     for (const auto& recognitionInfo : recognitions) {
-        if (ui->showDetections->isChecked()) {
+        if (_ui->showDetections->isChecked()) {
             const auto recognitionColor = ToRecognitionColor(recognitionInfo.recognitionType);
+
             snprintf(confidenceBuffer, sizeof(confidenceBuffer), " %.2f %%", recognitionInfo.confidence * 100);
 
             rectangle(videoFrame, recognitionInfo.boundingBox, recognitionColor, 2); // Bounding Box
@@ -364,7 +408,7 @@ void MainWindow::HandleRecognitions(const std::vector<RecognitionInfo>& recognit
         }
 
         // There is no specific handling for the attentive eye
-        if (!ui->debugMode->isChecked() && recognitionInfo.recognitionType != AttentiveEye) {
+        if (!_ui->debugMode->isChecked() && recognitionInfo.recognitionType != AttentiveEye) {
             if (recognitionInfo.recognitionType == DrowsyEye) {
                 // The frame counter with drowsy eye recognition is increased only if 2 drowsy eyes are recognized
                 if (!_isSleepMode && ++drowsyEyeCount == 2) {
@@ -401,31 +445,31 @@ void MainWindow::HandleRecognitions(const std::vector<RecognitionInfo>& recognit
 }
 
 void MainWindow::RestartRecognitionSystem() {
-    TextBrowserLogger::Log(ui->logger, tr("The Fist gesture is recognized"), WISTERIA);
-    TextBrowserLogger::Log(ui->logger, tr("Restart the recognition system"), WISTERIA);
-
+    // Restart is performed in the main thread, so resetting the counter is necessary in this thread
+    // so that the next iteration of the VideoStream loop does not have a second restart at once
+    _frameCounterWithRecognition.Reset(FistGesture);
     emit RecognitionSystemRestarted();
 }
 
 void MainWindow::WakeUpDrowsinessRecognitionSystem() {
-    TextBrowserLogger::Log(ui->logger, tr("The Palm gesture is recognized"), WISTERIA);
-    TextBrowserLogger::Log(ui->logger, tr("Waking up the drowsiness recognition system"), WISTERIA);
+    emit LogAsync(tr("The Palm gesture is recognized"), WISTERIA);
+    emit LogAsync(tr("Waking up the drowsiness recognition system"), WISTERIA);
 
     _isSleepMode = false;
     _frameCounterWithRecognition.Reset(PalmGesture);
 }
 
 void MainWindow::PutDrowsinessRecognitionSystemIntoSleepMode() {
-    TextBrowserLogger::Log(ui->logger, tr("The V gesture is recognized"), WISTERIA);
-    TextBrowserLogger::Log(ui->logger, tr("Putting the drowsiness recognition system into sleep mode"), WISTERIA);
+    emit LogAsync(tr("The V gesture is recognized"), WISTERIA);
+    emit LogAsync(tr("Putting the drowsiness recognition system into sleep mode"), WISTERIA);
 
     _isSleepMode = true;
     _frameCounterWithRecognition.Reset(VGesture);
 }
 
 void MainWindow::DrowsinessAlert() {
-    TextBrowserLogger::Log(ui->logger, tr("Drowsiness is recognized"), WISTERIA);
-    TextBrowserLogger::Log(ui->logger, tr("Drowsiness alert with a warning sound"), WISTERIA);
+    emit LogAsync(tr("Drowsiness is recognized"), WISTERIA);
+    emit LogAsync(tr("Drowsiness alert with a warning sound"), WISTERIA);
 
     emit PlayWarningSignal();
 
@@ -463,5 +507,5 @@ void MainWindow::DestroyVideoStreamThread() {
 
 MainWindow::~MainWindow() {
     DestroyVideoStreamThread();
-    delete ui;
+    delete _ui;
 }

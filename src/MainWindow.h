@@ -1,7 +1,7 @@
 // +-----------------------------------------+
 // |              License: MIT               |
 // +-----------------------------------------+
-// | Copyright (c) 2023                      |
+// | Copyright (c) 2024                      |
 // | Author: Gleb Trufanov (aka Glebchansky) |
 // +-----------------------------------------+
 
@@ -32,8 +32,10 @@ public:
     bool Errors() const;
 
 signals:
+    void LogAsync(const QString& message, const QColor& color); // Signal for the main thread to insert text into QTextBrowser
     void RecognitionSystemRestarted();
     void PlayWarningSignal();
+    void UpdateVideoFrame(const QPixmap& videoFrame);
 
 protected:
     void changeEvent(QEvent* event) override;
@@ -46,7 +48,7 @@ private slots:
     void OnRecognitionSystemRestarted();
 
 private:
-    Ui::MainWindow* ui;
+    Ui::MainWindow* _ui;
     bool _hasErrors = false;
     QTranslator _uiRussianTranslator;
 
@@ -83,6 +85,8 @@ private:
 
     void StartCamera();
     void StopCamera();
+
+    ///// Executed not in the main thread
     void VideoStream();
 
     void HandleRecognitions(const std::vector<RecognitionInfo>& recognitions, cv::Mat& videoFrame);
@@ -90,6 +94,7 @@ private:
     void WakeUpDrowsinessRecognitionSystem();
     void PutDrowsinessRecognitionSystemIntoSleepMode();
     void DrowsinessAlert();
+    //////////
 
     void ResumeVideoStreamThread();
     void SuspendVideoStreamThread(uint16_t msDelay);

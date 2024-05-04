@@ -2,6 +2,6 @@
     <qresource prefix="/icons">
         <file>images/Flag_of_Russia.svg</file>
         <file>images/Flag_of_the_United_Kingdom.svg</file>
-		<file>images/Main_Window_Icon.png</file>
+        <file>images/Main_Window_Icon.png</file>
     </qresource>
 </RCC>

@@ -35,14 +35,14 @@ using facial video surveillance.
 - 🎮 Interactive interaction with the prototype:
   - Start/stop the recognition system
   - Interaction with a video camera
-  - Eye and gesture recognition ([V gesture ✌](#v-gesture), [Fist gesture ✊](#fist-gesture), [Palm gesture ✋](#palm-gesture))
+  - Eye and gesture recognition ([V gesture ✌️](#v-gesture), [Fist gesture ✊](#fist-gesture), [Palm gesture ✋](#palm-gesture))
   - Warning of a potential emergency situation using warning sound
 - 🚀 Recognition (drowsiness, gestures, etc.) takes approximately one second
 - ⚙️ Multi-language user interface
 - ⚙️ Cross-platform (Windows/Linux)
 - ⚙️ Multithreaded application
 
-## Dependencies
+## Dependencies (Ninja) TODO
 - [C++17](https://en.cppreference.com/w/cpp/17):
   - 64-bit MSVC since version 19.15 on Windows
   - 64-bit GCC since version 11.2 on Linux
